@@ -3,7 +3,7 @@ Contributors: domfos
 Tags: navigation, sitemap, seo
 Requires at least: 2.1.0
 Tested up to: 2.1.2
-Stable tag: 1.1
+Stable tag: 1.2
 
 Add a really simple sitemap to your blog.  All posts are only 2 clicks away from the home page.
 

@@ -4,8 +4,13 @@ Plugin Name: Really Simple Sitemap
 Plugin URI: http://www.internetwealthmaster.com/wordpress-really-simple-sitemap/
 Description: Adds a really simple sitemap to your Wordpress blog. Add <!--rs sitemap--> to any page or post and the site map will be added there. Use Options->RS Sitemap to set options.
 Author: Dominic Foster
-Version: 1.1
+Version: 1.2
 Author URI: http://www.internetwealthmaster.com/
+*/
+
+/*
+Updates:
+1.2 : Only perform database queries if <!--rs sitemap--> exists in post/page text. Previously hit the db regardless.
 */
 
 /*
@@ -31,66 +36,71 @@ Foundation, Inc., 51 Franklin Street, Fifth Floor, Boston, MA  02110-1301, USA.
 function rs_sitemap($text) {
 	global $wpdb, $table_prefix;
 
-	//Get option values
-	$orderby = get_option('rs_sitemap_order');
-	$showhidden = get_option('rs_sitemap_hidden');;
-	$showpages = get_option('rs_sitemap_pages');
+	//Only perform plugin functionality if post/page text has <!--rs sitemap-->
+	if (preg_match("|<!--rs sitemap-->|", $text)) {
 
-	//do the order by
-	switch ($orderby) {
-		case 'date_descending':
-			$sqlorder = "ORDER BY post_date DESC";
-			break;
-		case 'date_ascending':
-			$sqlorder = "ORDER BY post_date";
-			break;
-		case 'alpha_descending':
-			$sqlorder = "ORDER BY post_title";
-			break;
-		case 'alpha_ascending':
-			$sqlorder = "ORDER BY post_title DESC";
-			break;
-	}
+		//Get option values
+		$orderby = get_option('rs_sitemap_order');
+		$showhidden = get_option('rs_sitemap_hidden');;
+		$showpages = get_option('rs_sitemap_pages');
 
-	//show private
-	if ($showhidden == 'on') {
-		$sqlwhere = "WHERE post_type='post' ";
-	} else {
-		$sqlwhere = "WHERE post_type='post' AND post_status='publish' ";
-	}
-
-	$sql = "SELECT * FROM " . $table_prefix . "posts " . $sqlwhere . $sqlorder;
-
-	$allposts = $wpdb->get_results($sql);
-
-	foreach($allposts as $ap) {
-		$perma = get_permalink($ap->ID);
-		$posts .= '<a href=' . $perma . '>' . $ap->post_title . '</a><br/>';
-	}
-
-	//Do we want the pages too?
-	if ($showpages != 'pages_none') {
-		$sqlpages = "SELECT * FROM " . $table_prefix . "posts where post_type='page' ";
-
-		if ($showhidden != 'on') {
-			$sqlpages .= "AND post_status='publish' ";
+		//do the order by
+		switch ($orderby) {
+			case 'date_descending':
+				$sqlorder = "ORDER BY post_date DESC";
+				break;
+			case 'date_ascending':
+				$sqlorder = "ORDER BY post_date";
+				break;
+			case 'alpha_descending':
+				$sqlorder = "ORDER BY post_title";
+				break;
+			case 'alpha_ascending':
+				$sqlorder = "ORDER BY post_title DESC";
+				break;
 		}
 
-		$allpages = $wpdb->get_results($sqlpages);
-
-		foreach($allpages as $ap) {
-			$perma = get_permalink($ap->ID);
-			$pages .= '<a href=' . $perma . '>' . $ap->post_title . '</a><br/>';
-		}
-
-		if ($showpages == 'pages_before') {
-			$posts = $pages . '<br/>' . $posts;
+		//show private
+		if ($showhidden == 'on') {
+			$sqlwhere = "WHERE post_type='post' ";
 		} else {
-			$posts = $posts . '<br/>' . $pages;
+			$sqlwhere = "WHERE post_type='post' AND post_status='publish' ";
 		}
-	}
 
-	$text = preg_replace("|<!--rs sitemap-->|", $posts, $text);
+		$sql = "SELECT * FROM " . $table_prefix . "posts " . $sqlwhere . $sqlorder;
+
+		$allposts = $wpdb->get_results($sql);
+
+		foreach($allposts as $ap) {
+			$perma = get_permalink($ap->ID);
+			$posts .= '<a href=' . $perma . '>' . $ap->post_title . '</a><br/>';
+		}
+
+		//Do we want the pages too?
+		if ($showpages != 'pages_none') {
+			$sqlpages = "SELECT * FROM " . $table_prefix . "posts where post_type='page' ";
+
+			if ($showhidden != 'on') {
+				$sqlpages .= "AND post_status='publish' ";
+			}
+
+			$allpages = $wpdb->get_results($sqlpages);
+
+			foreach($allpages as $ap) {
+				$perma = get_permalink($ap->ID);
+				$pages .= '<a href=' . $perma . '>' . $ap->post_title . '</a><br/>';
+			}
+
+			if ($showpages == 'pages_before') {
+				$posts = $pages . '<br/>' . $posts;
+			} else {
+				$posts = $posts . '<br/>' . $pages;
+			}
+		}
+
+		$text = preg_replace("|<!--rs sitemap-->|", $posts, $text);
+
+	}
 
 	return $text;
 
